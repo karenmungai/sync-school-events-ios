@@ -36,7 +36,7 @@ class WebShell extends StatefulWidget {
 
 class _WebShellState extends State<WebShell> {
   late final WebViewController _controller;
-  StreamSubscription<ConnectivityResult>? _connectivitySub;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _isLoading = true;
   bool _isOffline = false;
 
@@ -70,15 +70,17 @@ class _WebShellState extends State<WebShell> {
   }
 
   Future<void> _initConnectivity() async {
-    final result = await Connectivity().checkConnectivity();
-    _updateConnectionStatus(result);
+    final results = await Connectivity().checkConnectivity();
+    _updateConnectionStatus(results);
     _connectivitySub = Connectivity()
         .onConnectivityChanged
         .listen(_updateConnectionStatus);
   }
 
-  void _updateConnectionStatus(ConnectivityResult result) {
-    final offline = result == ConnectivityResult.none;
+  void _updateConnectionStatus(List<ConnectivityResult> results) {
+    final hasConnection =
+        results.any((result) => result != ConnectivityResult.none);
+    final offline = !hasConnection;
     if (offline == _isOffline) {
       return;
     }
@@ -94,9 +96,9 @@ class _WebShellState extends State<WebShell> {
   }
 
   Future<void> _handleRetry() async {
-    final result = await Connectivity().checkConnectivity();
-    _updateConnectionStatus(result);
-    if (result != ConnectivityResult.none) {
+    final results = await Connectivity().checkConnectivity();
+    _updateConnectionStatus(results);
+    if (results.any((result) => result != ConnectivityResult.none)) {
       _controller.reload();
     }
   }
