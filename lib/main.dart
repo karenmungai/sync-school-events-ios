@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 const _entryUrl = 'https://syncschoolevents.com/login.html';
@@ -40,6 +41,13 @@ class _WebShellState extends State<WebShell> {
   bool _isLoading = true;
   bool _isOffline = false;
 
+  bool _shouldOpenExternally(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('accounts.google.com') ||
+        lower.contains('oauth2') ||
+        lower.contains('/auth/google');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +56,17 @@ class _WebShellState extends State<WebShell> {
       ..setBackgroundColor(Colors.white)
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: (request) async {
+            final url = request.url;
+            if (_shouldOpenExternally(url)) {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onPageStarted: (_) {
             if (mounted) {
               setState(() => _isLoading = true);
